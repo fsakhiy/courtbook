@@ -26,6 +26,7 @@ export default function SignUpPage() {
     if (!form.email.trim()) e.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
     if (!form.phone.trim()) e.phone = 'Phone is required';
+    else if (!/^[\d\s\-+()]{8,}$/.test(form.phone)) e.phone = 'Invalid phone number';
     if (!form.password) e.password = 'Password is required';
     else if (form.password.length < 8) e.password = 'Min 8 characters';
     if (!consent.data) e.consent = 'You must agree to data collection';
