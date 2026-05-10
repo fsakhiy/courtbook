@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { courts, timeSlots, bookedSlots } from '@/lib/data';
-import { ArrowLeft, Check, Clock, Shield, CalendarDays, ChevronLeft, ChevronRight, AlertCircle, PartyPopper } from 'lucide-react';
+import { ArrowLeft, Check, Clock, Shield, CalendarDays, ChevronLeft, ChevronRight, AlertCircle, PartyPopper, QrCode, Wallet, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -56,6 +56,16 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmed, setConfirmed] = useState(false);
   const [privacyAck, setPrivacyAck] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('qris');
+
+  const paymentMethods = [
+    { id: 'qris', name: 'QRIS', description: 'Scan QR code with any e-wallet app' },
+    { id: 'bca', name: 'BCA Virtual Account', description: 'Transfer via BCA Virtual Account' },
+    { id: 'mandiri', name: 'Mandiri Virtual Account', description: 'Transfer via Mandiri Virtual Account' },
+    { id: 'gopay', name: 'GoPay', description: 'Pay with GoPay balance' },
+    { id: 'ovo', name: 'OVO', description: 'Pay with OVO balance' },
+    { id: 'dana', name: 'DANA', description: 'Pay with DANA balance' }
+  ];
 
   const calendarDays = useMemo(() => getCalendarDays(calYear, calMonth), [calYear, calMonth]);
   const dateKey = selectedDate ? formatDate(selectedDate) : '';
@@ -306,43 +316,65 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
 
             {/* STEP 3: Review & Confirm */}
             {step === 3 && (
-              <div className="space-y-6 animate-fade-in">
-                <div><h1 className="text-2xl font-bold mb-1">Review & Confirm</h1><p className="text-muted-foreground text-sm">Please review your booking before confirming</p></div>
+                <div className="space-y-6 animate-fade-in">
+                  <div><h1 className="text-2xl font-bold mb-1">Review & Confirm</h1><p className="text-muted-foreground text-sm">Please review your booking before confirming</p></div>
 
-                {/* Booking Details */}
-                <div className="border border-border rounded-xl p-6 bg-card space-y-4">
-                  <h3 className="font-semibold">Booking Details</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><p className="text-muted-foreground text-xs">Court</p><p className="font-semibold">{court.name}</p></div>
-                    <div><p className="text-muted-foreground text-xs">Date</p><p className="font-semibold">{selectedDate ? displayDate(selectedDate) : ''}</p></div>
-                    <div><p className="text-muted-foreground text-xs">Time</p><p className="font-semibold">{selectedSlots.join(', ')}</p></div>
-                    <div><p className="text-muted-foreground text-xs">Players</p><p className="font-semibold">{formData.players}</p></div>
-                    <div><p className="text-muted-foreground text-xs">Contact</p><p className="font-semibold">{formData.name}</p></div>
-                    <div><p className="text-muted-foreground text-xs">Phone</p><p className="font-semibold">{formData.phone}</p></div>
+                  {/* Payment Method Selection */}
+                  <div className="space-y-3">
+                    {paymentMethods.map(method => (
+                        <button
+                            key={method.id}
+                            onClick={() => setSelectedPaymentMethod(method.id)}
+                            className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                selectedPaymentMethod === method.id
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-border hover:border-primary/50 bg-card'
+                            }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 transition-all ${
+                                selectedPaymentMethod === method.id
+                                    ? 'bg-primary border-primary'
+                                    : 'border-border'
+                            }`}>
+                              {selectedPaymentMethod === method.id && <div className="w-2 h-2 bg-primary-foreground rounded-full" />}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-sm">{method.name}</h3>
+                              <p className="text-xs text-muted-foreground mt-1">{method.description}</p>
+                            </div>
+                            {method.id === 'qris' && selectedPaymentMethod === method.id && (
+                                <QrCode className="w-5 h-5 text-primary flex-shrink-0" />
+                            )}
+                            {method.id !== 'qris' && (
+                                <CreditCard className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                            )}
+                          </div>
+                        </button>
+                    ))}
+                  </div>
+
+                  {/* Privacy Check */}
+                  <div className="border-2 border-primary/30 rounded-xl p-6 bg-primary/5 space-y-4">
+                    <h3 className="font-semibold flex items-center gap-2"><Shield className="w-5 h-5 text-primary" /> Before You Confirm</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2"><Check className="w-4 h-4 text-primary mt-0.5 shrink-0" /><span>Confirmation sent to <strong>{minimalData ? formData.phone : (formData.email || formData.phone)}</strong></span></div>
+                      <div className="flex items-start gap-2"><Check className="w-4 h-4 text-primary mt-0.5 shrink-0" /><span>Court staff will have your <strong>name & {minimalData ? 'phone only' : 'contact info'}</strong></span></div>
+                      <div className="flex items-start gap-2"><Check className="w-4 h-4 text-primary mt-0.5 shrink-0" /><span>Your data will be deleted after <strong>{court.retentionPeriod}</strong></span></div>
+                    </div>
+                    <div className="flex items-center gap-3 pt-2 border-t border-primary/20">
+                      <input type="checkbox" id="privacy-ack" checked={privacyAck} onChange={e => setPrivacyAck(e.target.checked)} className="w-4 h-4 rounded accent-primary" />
+                      <Label htmlFor="privacy-ack" className="text-sm cursor-pointer">I understand how my data will be used and agree to proceed</Label>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <Button variant="outline" size="lg" onClick={() => setStep(2)} className="gap-2"><ChevronLeft className="w-4 h-4" /> Back to Edit</Button>
+                    <Button size="lg" disabled={!privacyAck} onClick={handleConfirm} className="gap-2 min-w-[220px]">
+                      <Check className="w-5 h-5" /> Confirm Booking
+                    </Button>
                   </div>
                 </div>
-
-                {/* Privacy Check */}
-                <div className="border-2 border-primary/30 rounded-xl p-6 bg-primary/5 space-y-4">
-                  <h3 className="font-semibold flex items-center gap-2"><Shield className="w-5 h-5 text-primary" /> Before You Confirm</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-start gap-2"><Check className="w-4 h-4 text-primary mt-0.5 shrink-0" /><span>Confirmation sent to <strong>{minimalData ? formData.phone : (formData.email || formData.phone)}</strong></span></div>
-                    <div className="flex items-start gap-2"><Check className="w-4 h-4 text-primary mt-0.5 shrink-0" /><span>Court staff will have your <strong>name & {minimalData ? 'phone only' : 'contact info'}</strong></span></div>
-                    <div className="flex items-start gap-2"><Check className="w-4 h-4 text-primary mt-0.5 shrink-0" /><span>Your data will be deleted after <strong>{court.retentionPeriod}</strong></span></div>
-                  </div>
-                  <div className="flex items-center gap-3 pt-2 border-t border-primary/20">
-                    <input type="checkbox" id="privacy-ack" checked={privacyAck} onChange={e => setPrivacyAck(e.target.checked)} className="w-4 h-4 rounded accent-primary" />
-                    <Label htmlFor="privacy-ack" className="text-sm cursor-pointer">I understand how my data will be used and agree to proceed</Label>
-                  </div>
-                </div>
-
-                <div className="flex justify-between">
-                  <Button variant="outline" size="lg" onClick={() => setStep(2)} className="gap-2"><ChevronLeft className="w-4 h-4" /> Back to Edit</Button>
-                  <Button size="lg" disabled={!privacyAck} onClick={handleConfirm} className="gap-2 min-w-[220px]">
-                    <Check className="w-5 h-5" /> Confirm Booking
-                  </Button>
-                </div>
-              </div>
             )}
           </div>
 
