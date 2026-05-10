@@ -82,6 +82,17 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
     return Object.keys(e).length === 0;
   };
 
+  const isPastTimeSlot = (slot: string, date: Date) => {
+    if (formatDate(date) !== formatDate(today)) return false;
+
+    const [hours, minutes] = slot.split(':').map(Number);
+    const slotDate = new Date(date);
+    slotDate.setHours(hours, minutes, 0, 0);
+
+    const now = new Date();
+    return slotDate <= now;
+  };
+
   const handleConfirm = () => { setConfirmed(true); };
 
   if (confirmed) {
@@ -173,14 +184,34 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                       {timeSlots.map(slot => {
                         const booked = isBooked(slot);
+                        const pastTime = selectedDate ? isPastTimeSlot(slot, selectedDate) : false;
                         const selected = selectedSlots.includes(slot);
+                        const disabled = booked || pastTime;
+
                         return (
-                          <button key={slot} disabled={booked}
-                            onClick={() => toggleSlot(slot)}
-                            className={`p-3 rounded-lg border text-sm font-medium transition-all ${booked ? 'bg-muted/50 text-muted-foreground/40 border-border cursor-not-allowed line-through' : selected ? 'bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]' : 'border-border hover:border-primary/50 hover:bg-primary/5'}`}>
-                            <Clock className={`w-4 h-4 mx-auto mb-1 ${selected ? 'text-primary-foreground' : booked ? 'text-muted-foreground/40' : 'text-muted-foreground'}`} />
-                            {slot}
-                          </button>
+                            <button
+                                key={slot}
+                                disabled={disabled}
+                                onClick={() => toggleSlot(slot)}
+                                className={`p-3 rounded-lg border text-sm font-medium transition-all ${
+                                    disabled
+                                        ? 'bg-muted/50 text-muted-foreground/40 border-border cursor-not-allowed line-through'
+                                        : selected
+                                            ? 'bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]'
+                                            : 'border-border hover:border-primary/50 hover:bg-primary/5'
+                                }`}
+                            >
+                              <Clock
+                                  className={`w-4 h-4 mx-auto mb-1 ${
+                                      selected
+                                          ? 'text-primary-foreground'
+                                          : disabled
+                                              ? 'text-muted-foreground/40'
+                                              : 'text-muted-foreground'
+                                  }`}
+                              />
+                              {slot}
+                            </button>
                         );
                       })}
                     </div>
